@@ -26,6 +26,7 @@ data class Clipboard(val mode: ClipboardMode, val paths: List<String>)
 data class ExplorerState(
     val home: File,
     val root: File,
+    val rootLabel: String = "Internal storage",
     val currentDir: File,
     val entries: List<FileItem> = emptyList(),
     val isLoading: Boolean = true,
@@ -47,6 +48,7 @@ data class ExplorerState(
     val rootSuFound: Boolean = false,
     val rootGranted: Boolean = false,
     val rootChecking: Boolean = false,
+    val rootForAppDataEnabled: Boolean = false,
 ) {
     val isSelectionMode: Boolean get() = selection.isNotEmpty()
 
@@ -58,6 +60,7 @@ data class ExplorerState(
 
     val currentTitle: String
         get() = when {
+            isAtRoot -> rootLabel
             currentDir.absolutePath == home.absolutePath -> "Internal storage"
             currentDir.absolutePath == "/" -> "Root"
             else -> currentDir.name.ifBlank { "Storage" }

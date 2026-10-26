@@ -24,6 +24,8 @@ fun buildCrumbs(
     home: File,
     current: File,
     includeFilesystemRoot: Boolean,
+    root: File = home,
+    rootLabel: String = "Internal storage",
 ): List<Crumb> {
     val crumbs = mutableListOf<Crumb>()
     if (includeFilesystemRoot) {
@@ -37,6 +39,11 @@ fun buildCrumbs(
         }
 
         includeFilesystemRoot -> appendSegments(crumbs, File("/"), current)
+
+        isWithin(current, root) -> {
+            crumbs += Crumb(rootLabel, root)
+            appendSegments(crumbs, root, current)
+        }
 
         else -> crumbs += Crumb(current.name.ifBlank { "Storage" }, current)
     }

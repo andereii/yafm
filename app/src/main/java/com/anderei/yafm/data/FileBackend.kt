@@ -41,4 +41,7 @@ interface FileBackend {
      * Privileged backends copy the file into [stagingDirectory] when the app itself can't read it.
      */
     suspend fun stage(source: File, stagingDirectory: File): File
+
+    /** Optional: finds ad-like files under app data using a privileged backend. */
+    suspend fun findAdFiles(androidDataRoot: File): List<FileItem> = emptyList()
 }

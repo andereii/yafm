@@ -79,7 +79,8 @@ private val spreadsheetExtensions = setOf(
     "xls", "xlsx", "csv", "ods", "numbers",
 )
 private val archiveExtensions = setOf(
-    "zip", "rar", "7z", "tar", "gz", "bz2", "xz", "tgz", "iso", "jar",
+    "zip", "rar", "7z", "tar", "gz", "gzip", "bz2", "xz", "tgz", "tbz", "tbz2", "txz",
+    "iso", "jar", "cbz",
 )
 private val codeExtensions = setOf(
     "kt", "kts", "java", "xml", "json", "yaml", "yml", "html", "css", "js", "ts", "tsx",

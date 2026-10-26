@@ -185,7 +185,11 @@ class PrivilegeManager(context: Context) {
         return result
     }
 
-    fun createBackend(mode: AccessMode, shizukuAsRoot: Boolean): FileBackend {
+    fun createBackend(
+        mode: AccessMode,
+        shizukuAsRoot: Boolean,
+        correctSelinuxContext: () -> Boolean = { false },
+    ): FileBackend {
         val externalRoot = Environment.getExternalStorageDirectory()
         return when (mode) {
             AccessMode.STANDARD -> FileRepository(externalRoot)
@@ -197,6 +201,7 @@ class PrivilegeManager(context: Context) {
             AccessMode.ROOT -> ShellFileBackend(
                 shell = rootExecutor,
                 navigationRoot = File("/"),
+                correctSelinuxContext = correctSelinuxContext,
             )
         }
     }

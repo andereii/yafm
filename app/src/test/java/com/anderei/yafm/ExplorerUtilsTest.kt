@@ -44,4 +44,19 @@ class ExplorerUtilsTest {
 
         assertEquals(listOf("Root", "data", "adb"), crumbs.map { it.label })
     }
+
+    @Test
+    fun `external storage crumbs use the volume label`() {
+        val home = File("/storage/emulated/0")
+        val volume = File("/storage/1A2B-3C4D")
+        val crumbs = buildCrumbs(
+            home = home,
+            current = File(volume, "Download"),
+            includeFilesystemRoot = false,
+            root = volume,
+            rootLabel = "SD card",
+        )
+
+        assertEquals(listOf("SD card", "Download"), crumbs.map { it.label })
+    }
 }

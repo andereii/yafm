@@ -1,3 +1,264 @@
 <resources>
     <string name="app_name">YAFM</string>
+    <string name="app_full_name" translatable="false">Yet Another File Manager</string>
+
+    <!-- Home -->
+    <string name="home">Home</string>
+    <string name="internal_storage">Internal storage</string>
+    <string name="removable_storage">Removable storage</string>
+    <string name="storage_used_total">%1$s / %2$s</string>
+    <string name="storage_scanning">Finding storage…</string>
+    <string name="recent_files">Recent files</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="no_recent_files">Open a file to see it here</string>
+    <string name="no_bookmarks">Star files or folders to pin them here</string>
+    <string name="category_images">Images</string>
+    <string name="category_movies">Movies</string>
+    <string name="category_books">Books</string>
+    <string name="category_music">Music</string>
+    <string name="category_apps">Apps</string>
+
+    <!-- Home feature tiles -->
+    <string name="feature_cleaner">Cleaner</string>
+    <string name="feature_cloud">Cloud Drive</string>
+    <string name="feature_compressed">Compressed</string>
+    <string name="feature_sender">Sender</string>
+    <string name="feature_text_editor">Text Editor</string>
+    <string name="feature_network">Network</string>
+    <string name="feature_recycle_bin">Recycle Bin</string>
+    <string name="feature_downloader">Downloader</string>
+    <string name="feature_view_on_pc">View on PC</string>
+    <string name="feature_all_tools">All tools</string>
+    <string name="soon">Soon</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="feature_planned_description">This module is planned for a future update.</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="language">Language</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_spanish" translatable="false">Español</string>
+    <string name="language_portuguese" translatable="false">Português</string>
+    <string name="trash_retention_keep">Keep deleted files for</string>
+    <string name="days">%1$d days</string>
+    <string name="about">About</string>
+    <string name="settings_about_description">A file manager built with Jetpack Compose and Material 3 Expressive.</string>
+    <string name="version_label">Version %1$s</string>
+    <string name="back">Back</string>
+    <string name="search">Search</string>
+
+    <!-- Recycle Bin -->
+    <string name="trash_retention_note">Items are permanently deleted %1$d days after being deleted.</string>
+    <string name="trash_empty">The Recycle Bin is empty</string>
+    <string name="trash_restore">Restore</string>
+    <string name="trash_delete_now">Delete now</string>
+    <string name="trash_info">Details</string>
+    <string name="trash_original_location">Original location</string>
+    <string name="trash_deleted_at">Deleted</string>
+    <string name="trash_expires_at">Expires</string>
+    <string name="trash_size">Size</string>
+    <string name="trash_deleted_on">Deleted %1$s</string>
+    <string name="trash_expires_on">Expires %1$s</string>
+    <string name="trash_empty_action">Empty</string>
+    <string name="trash_empty_confirm_title">Empty Recycle Bin?</string>
+    <string name="trash_empty_confirm_text">All items will be permanently deleted.</string>
+    <string name="trash_delete_confirm_title">Delete permanently?</string>
+    <string name="trash_delete_confirm_text">This action can’t be undone.</string>
+    <string name="trash_restored">Restored</string>
+    <string name="trash_restore_failed">Couldn’t restore: %1$s</string>
+    <string name="trash_deleted">Permanently deleted</string>
+    <string name="trash_delete_failed">Couldn’t delete: %1$s</string>
+    <string name="trash_emptied">Recycle Bin emptied</string>
+    <string name="trash_empty_failed">Couldn’t empty the Recycle Bin</string>
+
+    <!-- Delete dialog -->
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="delete_permanently">Delete Permanently</string>
+    <string name="move_to_recycle_bin">Move to Recycle Bin</string>
+    <string name="delete_dialog_single_title">Delete “%1$s”?</string>
+    <string name="delete_dialog_multiple_title">Delete %1$d items?</string>
+    <string name="delete_dialog_message">The selected items will be moved to the Recycle Bin and automatically deleted after %1$d days.</string>
+    <string name="delete_dialog_message_permanent">The selected items will be permanently deleted. This action can’t be undone.</string>
+
+    <!-- Bookmarks / messages -->
+    <string name="add_bookmark">Add bookmark</string>
+    <string name="remove_bookmark">Remove bookmark</string>
+    <string name="bookmarked">Bookmarked</string>
+    <string name="bookmark_removed">Bookmark removed</string>
+    <string name="root_required">This location requires root access</string>
+    <string name="open_file_failed">Couldn’t open this file</string>
+    <string name="close">Close</string>
+
+    <plurals name="days_count">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <!-- Cleaner -->
+    <string name="cleaner_scanning">Scanning… %1$d files</string>
+    <string name="cleaner_scanning_short">Scanning…</string>
+    <string name="cleaner_scan">Scan again</string>
+    <string name="cleaner_cancel_scan">Cancel</string>
+    <string name="cleaner_scan_failed">Couldn’t scan storage</string>
+    <string name="cleaner_nothing">Nothing to clean</string>
+    <string name="cleaner_nothing_hint">Your storage is already tidy.</string>
+    <string name="cleaner_empty_title">Empty files &amp; folders</string>
+    <string name="cleaner_empty_desc">Zero-byte files and folders with no contents.</string>
+    <string name="cleaner_installers_title">Installers</string>
+    <string name="cleaner_installers_desc">APK, XAPK, APKM and APKS packages outside app data.</string>
+    <string name="cleaner_ads_title">Ad files</string>
+    <string name="cleaner_ads_desc">Best-effort detection of ad assets in app data (Shizuku or root required).</string>
+    <string name="cleaner_ads_warning">Review these files before deleting.</string>
+    <string name="cleaner_downloads_title">Downloads</string>
+    <string name="cleaner_downloads_desc">Files in your Download folders.</string>
+    <string name="cleaner_trash_desc">Permanently empty the Recycle Bin.</string>
+    <string name="cleaner_category_count">%1$d items · %2$s</string>
+    <string name="cleaner_empty_category">Nothing found</string>
+    <string name="cleaner_selected">%1$d selected</string>
+    <string name="cleaner_selected_summary">%1$d items · %2$s</string>
+    <string name="cleaner_clean">Clean</string>
+    <string name="cleaner_confirm_title">Delete %1$d items permanently?</string>
+    <string name="cleaner_confirm_text">The Cleaner bypasses the Recycle Bin. This action can’t be undone.</string>
+    <string name="cleaner_delete_permanently">Delete permanently</string>
+    <string name="cleaner_deleted">Deleted %1$d items</string>
+    <string name="cleaner_deleted_size">Freed %1$s</string>
+    <string name="cleaner_clean_failed">Couldn’t delete the selected items</string>
+    <string name="cleaner_expand">Show items</string>
+    <string name="cleaner_collapse">Hide items</string>
+    <string name="cleaner_cleaning">Cleaning…</string>
+    <string name="cleaner_select_all">Select all</string>
+
+    <string name="cleaner_folder">Folder</string>
+
+    <!-- Compressed files -->
+    <string name="compressed_title">Compressed Files</string>
+    <string name="compressed_scanning">Scanning… %1$d files</string>
+    <string name="compressed_scanning_short">Scanning…</string>
+    <string name="compressed_scan">Scan again</string>
+    <string name="compressed_cancel_scan">Cancel</string>
+    <string name="compressed_empty">No compressed files found</string>
+    <string name="compressed_empty_hint">Archives in internal and external storage will appear here.</string>
+    <string name="compressed_count">%1$d archives · %2$s</string>
+    <string name="compressed_scan_failed">Couldn’t scan for archives</string>
+    <string name="archive_extract_here">Extract here</string>
+    <string name="archive_extract_to">Extract to…</string>
+    <string name="archive_extract">Extract</string>
+    <string name="archive_extract_title">Extract “%1$s”</string>
+    <string name="archive_destination">Destination</string>
+    <string name="archive_password_optional">Password (if required)</string>
+    <string name="archive_password_optional_hint">Optional</string>
+    <string name="archive_extracting">Extracting…</string>
+    <string name="archive_extracted">Extracted to %1$s</string>
+    <string name="archive_extract_failed">Couldn’t extract: %1$s</string>
+    <string name="archive_password_required">This archive needs a password</string>
+    <string name="archive_select_folder">Select folder</string>
+    <string name="archive_select_this_folder">Select this folder</string>
+    <string name="archive_no_folders">No subfolders</string>
+    <string name="archive_up">Up</string>
+    <string name="archive_close">Close</string>
+    <string name="archive_cancel">Cancel</string>
+    <string name="archive_create">Create archive</string>
+    <string name="archive_name">Archive name</string>
+    <string name="archive_format">Format</string>
+    <string name="archive_compression_level">Compression level</string>
+    <string name="archive_level">Level %1$d</string>
+    <string name="archive_level_store">Store</string>
+    <string name="archive_password">Password</string>
+    <string name="archive_password_support">ZIP only · AES-256</string>
+    <string name="archive_tar_no_compression">TAR stores files without compression.</string>
+    <string name="archive_create_action">Create</string>
+    <string name="archive_creating">Creating archive…</string>
+    <string name="archive_created">Created “%1$s”</string>
+    <string name="archive_create_failed">Couldn’t create archive: %1$s</string>
+    <string name="archive_exists">An archive with that name already exists</string>
+    <string name="archive_compress">Compress</string>
+    <string name="archive_show_password">Show password</string>
+    <string name="archive_hide_password">Hide password</string>
+    <string name="archive_working">Working…</string>
+
+
+    <!-- Persistent privileged access settings -->
+    <string name="settings_privileged_access">Privileged access</string>
+    <string name="access_mode">Access mode</string>
+    <string name="access_mode_standard">Standard</string>
+    <string name="access_mode_shizuku">Shizuku</string>
+    <string name="access_mode_root">Root</string>
+    <string name="access_mode_description">Standard uses All files access. Shizuku adds ADB-shell access for Android/data and Android/obb. Root unlocks the whole filesystem, including /data and /system.</string>
+    <string name="shizuku_status">Shizuku</string>
+    <string name="shizuku_status_not_installed">Not installed</string>
+    <string name="shizuku_status_not_running">Installed, not running</string>
+    <string name="shizuku_status_permission">Permission required</string>
+    <string name="shizuku_status_connected">Connected</string>
+    <string name="shizuku_status_connected_root">Connected as root</string>
+    <string name="shizuku_action_grant">Grant permission</string>
+    <string name="shizuku_detail_api">API %1$d</string>
+    <string name="shizuku_detail_uid">uid %1$d</string>
+    <string name="root_status">Root</string>
+    <string name="root_status_granted">Granted</string>
+    <string name="root_status_detected">su detected</string>
+    <string name="root_status_checking">Requesting…</string>
+    <string name="root_status_not_found">su not detected</string>
+    <string name="root_action_request">Request root</string>
+    <string name="root_action_waiting">Waiting for approval…</string>
+    <string name="refresh_status">Refresh status</string>
+    <string name="root_use_app_data">Use for Android/data &amp; obb</string>
+    <string name="root_use_app_data_description">Automatically switch to root when opening Android/data or Android/obb. Root operations are faster than SAF and can reach app folders.</string>
+    <string name="root_correct_selinux">Correct SELinux context</string>
+    <string name="root_correct_selinux_description">Restore the default SELinux context after copying or moving items into /data, /system or /sys.</string>
+    <string name="settings_privileged_hint">Access mode and root options are saved and restored on the next launch. Root grants are managed by your root manager.</string>
+
+    <string name="settings_shizuku_install_hint">Install Shizuku to access Android/data and Android/obb without root.</string>
+
+    <!-- LocalSend Sender -->
+    <string name="sender_nearby_devices">Nearby devices</string>
+    <string name="sender_searching">Searching for LocalSend devices…</string>
+    <string name="sender_no_devices">No LocalSend devices found</string>
+    <string name="sender_no_devices_hint">Open LocalSend on the other device and keep both devices on the same Wi-Fi network.</string>
+    <string name="sender_add_manual">Add device by IP</string>
+    <string name="sender_search_again">Search again</string>
+    <string name="sender_files_to_send">Files to send</string>
+    <string name="sender_choose_files">Choose files</string>
+    <string name="sender_no_files">Choose one or more files to send.</string>
+    <string name="sender_send">Send</string>
+    <string name="sender_files_summary">%1$d files · %2$s</string>
+    <string name="sender_remove_file">Remove file</string>
+    <string name="sender_manual_title">Add a LocalSend device</string>
+    <string name="sender_host">IP address</string>
+    <string name="sender_port">Port</string>
+    <string name="sender_add">Add</string>
+    <string name="sender_connecting">Connecting…</string>
+    <string name="sender_device_meta">v%1$s · %2$s:%3$d</string>
+    <string name="sender_sending_to">Sending to %1$s</string>
+    <string name="sender_file_progress">File %1$d of %2$d</string>
+    <string name="sender_sent_summary">Sent %1$d file(s) to %2$s</string>
+    <string name="sender_pin_title">PIN required</string>
+    <string name="sender_pin_description">%1$s requires a PIN before accepting files.</string>
+    <string name="sender_pin">PIN</string>
+    <string name="sender_pin_connect">Send</string>
+    <string name="sender_permission_title">Network access</string>
+    <string name="sender_permission_description">YAFM needs network access to discover and talk to LocalSend devices on your Wi-Fi network.</string>
+    <string name="sender_permission_grant">Grant permission</string>
+    <string name="sender_no_network">Local network access is unavailable.</string>
+    <string name="sender_ready">Ready</string>
+    <string name="sender_secure">HTTPS</string>
+    <string name="sender_desktop">Computer</string>
+    <string name="sender_mobile">Mobile</string>
+    <string name="sender_permission_denied">Local network permission was denied</string>
+    <string name="sender_transfer_cancel">Cancel transfer</string>
+    <string name="sender_unknown_size">Unknown size</string>
+
+
+    <string name="sender_msg_choose_file">Choose at least one file first</string>
+    <string name="sender_msg_sent">Sent %1$d file(s) to %2$s</string>
+    <string name="sender_msg_failed">Couldn’t send: %1$s</string>
+    <string name="sender_msg_cancelled">Transfer cancelled</string>
+    <string name="sender_msg_files_unreadable">Couldn’t read the selected files</string>
+    <string name="sender_msg_enter_ip">Enter an IP address</string>
+    <string name="sender_msg_not_found">Couldn’t find LocalSend at %1$s</string>
+    <string name="sender_msg_connected">Connected to %1$s</string>
+
+    <string name="sender_open_settings">Open app settings</string>
+    <string name="sender_permission_settings_hint">Enable Network access for YAFM in App info, then return and tap Retry.</string>
+    <string name="sender_retry">Retry</string>
 </resources>

@@ -11,6 +11,10 @@ materialIcons = "1.7.8"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
 shizuku = "13.1.5"
+zip4j = "2.11.6"
+commonsCompress = "1.28.0"
+junrar = "8.1.2"
+xz = "1.12"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,6 +33,11 @@ compose-material-icons-extended = { group = "androidx.compose.material", name = 
 
 shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizuku" }
 shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizuku" }
+
+zip4j = { group = "net.lingala.zip4j", name = "zip4j", version.ref = "zip4j" }
+commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "commonsCompress" }
+junrar = { group = "com.github.junrar", name = "junrar", version.ref = "junrar" }
+xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

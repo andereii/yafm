@@ -51,8 +51,11 @@ import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.TableChart
+import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -89,14 +92,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.anderei.yafm.R
 import com.anderei.yafm.data.FileItem
 import com.anderei.yafm.data.FileKind
+import com.anderei.yafm.data.archive.ArchiveFormat
 import com.anderei.yafm.util.formatDateTime
 import com.anderei.yafm.util.formatSize
 import com.anderei.yafm.util.mimeType
@@ -214,12 +220,17 @@ data class FileRowActions(
     val onShare: (FileItem) -> Unit = {},
     val onDetails: (FileItem) -> Unit = {},
     val onDelete: (FileItem) -> Unit = {},
+    val onBookmark: (FileItem) -> Unit = {},
+    val onExtractHere: (FileItem) -> Unit = {},
+    val onExtractTo: (FileItem) -> Unit = {},
+    val onCompress: (FileItem) -> Unit = {},
 )
 
 @Composable
 fun FileItemMenu(
     expanded: Boolean,
     item: FileItem,
+    bookmarked: Boolean,
     actions: FileRowActions,
     onDismiss: () -> Unit,
 ) {
@@ -261,6 +272,32 @@ fun FileItemMenu(
                 actions.onMove(item)
             },
         )
+        if (!item.isDirectory && ArchiveFormat.isArchiveName(item.name)) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.archive_extract_here)) },
+                leadingIcon = { Icon(Icons.Rounded.Unarchive, contentDescription = null) },
+                onClick = {
+                    onDismiss()
+                    actions.onExtractHere(item)
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.archive_extract_to)) },
+                leadingIcon = { Icon(Icons.Rounded.FolderZip, contentDescription = null) },
+                onClick = {
+                    onDismiss()
+                    actions.onExtractTo(item)
+                },
+            )
+        }
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.archive_compress)) },
+            leadingIcon = { Icon(Icons.Rounded.FolderZip, contentDescription = null) },
+            onClick = {
+                onDismiss()
+                actions.onCompress(item)
+            },
+        )
         if (!item.isDirectory) {
             DropdownMenuItem(
                 text = { Text("Share") },
@@ -277,6 +314,25 @@ fun FileItemMenu(
             onClick = {
                 onDismiss()
                 actions.onDetails(item)
+            },
+        )
+        DropdownMenuItem(
+            text = {
+                Text(
+                    stringResource(
+                        if (bookmarked) R.string.remove_bookmark else R.string.add_bookmark,
+                    ),
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    if (bookmarked) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                    contentDescription = null,
+                )
+            },
+            onClick = {
+                onDismiss()
+                actions.onBookmark(item)
             },
         )
         HorizontalDivider()
@@ -305,6 +361,7 @@ fun FileRow(
     item: FileItem,
     selected: Boolean,
     selectionMode: Boolean,
+    bookmarked: Boolean,
     actions: FileRowActions,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -355,16 +412,38 @@ fun FileRow(
                 Checkbox(checked = selected, onCheckedChange = null)
             } else {
                 Box {
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(
-                            Icons.Rounded.MoreVert,
-                            contentDescription = "More options for ${item.name}",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    if (!item.isDirectory && ArchiveFormat.isArchiveName(item.name)) {
+                        // Archives get a direct extract action in place of the overflow button.
+                        // Long-press still opens the full context menu.
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .combinedClickable(
+                                    onClick = { actions.onExtractTo(item) },
+                                    onLongClick = { menuOpen = true },
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Rounded.Unarchive,
+                                contentDescription = stringResource(R.string.archive_extract_to),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(
+                                Icons.Rounded.MoreVert,
+                                contentDescription = "More options for ${item.name}",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     FileItemMenu(
                         expanded = menuOpen,
                         item = item,
+                        bookmarked = bookmarked,
                         actions = actions,
                         onDismiss = { menuOpen = false },
                     )
@@ -382,6 +461,7 @@ fun FileGridCard(
     item: FileItem,
     selected: Boolean,
     selectionMode: Boolean,
+    bookmarked: Boolean,
     actions: FileRowActions,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -434,6 +514,7 @@ fun FileGridCard(
                         FileItemMenu(
                             expanded = menuOpen,
                             item = item,
+                            bookmarked = bookmarked,
                             actions = actions,
                             onDismiss = { menuOpen = false },
                         )
@@ -467,11 +548,13 @@ fun BreadcrumbBar(
     home: File,
     current: File,
     includeFilesystemRoot: Boolean,
+    root: File,
+    rootLabel: String,
     onNavigate: (File) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val crumbs = remember(home, current, includeFilesystemRoot) {
-        buildCrumbs(home, current, includeFilesystemRoot)
+    val crumbs = remember(home, current, includeFilesystemRoot, root, rootLabel) {
+        buildCrumbs(home, current, includeFilesystemRoot, root, rootLabel)
     }
     val listState = rememberLazyListState()
 
@@ -642,33 +725,74 @@ fun NameDialog(
 }
 
 @Composable
-fun DeleteDialog(items: List<FileItem>, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+fun DeleteDialog(
+    items: List<FileItem>,
+    retentionDays: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (permanent: Boolean) -> Unit,
+) {
     val single = items.size == 1
     val first = items.firstOrNull()
+    var permanent by rememberSaveable { mutableStateOf(false) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
         title = {
             Text(
-                if (single && first != null) "Delete “${first.name}”?" else "Delete ${items.size} items?",
-            )
-        },
-        text = {
-            Text(
-                if (single && first?.isDirectory == true) {
-                    "The folder and everything inside it will be permanently deleted."
+                if (single && first != null) {
+                    stringResource(R.string.delete_dialog_single_title, first.name)
                 } else {
-                    "This action can't be undone."
+                    stringResource(R.string.delete_dialog_multiple_title, items.size)
                 },
             )
         },
+        text = {
+            Column {
+                Text(
+                    if (permanent) {
+                        stringResource(R.string.delete_dialog_message_permanent)
+                    } else {
+                        stringResource(R.string.delete_dialog_message, retentionDays)
+                    },
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { permanent = !permanent }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = permanent,
+                        onCheckedChange = { permanent = it },
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.delete_permanently),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = { onConfirm(permanent) }) {
+                Text(
+                    text = if (permanent) {
+                        stringResource(R.string.delete_permanently)
+                    } else {
+                        stringResource(R.string.move_to_recycle_bin)
+                    },
+                    color = if (permanent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
         },
     )
 }

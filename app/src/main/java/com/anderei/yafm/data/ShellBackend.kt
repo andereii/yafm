@@ -160,6 +160,7 @@ class RootShellExecutor : ShellExecutor {
 class ShellFileBackend(
     private val shell: ShellExecutor,
     override val navigationRoot: File,
+    private val correctSelinuxContext: () -> Boolean = { false },
 ) : FileBackend {
 
     override suspend fun list(directory: File): List<FileItem> {
@@ -230,10 +231,11 @@ class ShellFileBackend(
         val script = buildString {
             appendLine("ok=0; fail=0")
             plan.pairs.forEach { (source, destination) ->
+                val restore = selinuxRestoreCommand(destination)
                 appendLine(
                     "if cp -R -- ${source.absolutePath.shellQuoted()} " +
                         "${destination.absolutePath.shellQuoted()}; then " +
-                        "ok=\$((ok+1)); else fail=\$((fail+1)); fi",
+                        "ok=\$((ok+1)); $restore else fail=\$((fail+1)); fi",
                 )
             }
             appendLine("printf '%s %s\\n' \"\$ok\" \"\$fail\"")
@@ -253,9 +255,10 @@ class ShellFileBackend(
             plan.pairs.forEach { (source, destination) ->
                 val from = source.absolutePath.shellQuoted()
                 val to = destination.absolutePath.shellQuoted()
+                val restore = selinuxRestoreCommand(destination)
                 appendLine(
-                    "if mv -- $from $to 2>/dev/null; then ok=\$((ok+1)); " +
-                        "elif cp -R -- $from $to && rm -rf -- $from; then ok=\$((ok+1)); " +
+                    "if mv -- $from $to 2>/dev/null; then ok=\$((ok+1)); $restore " +
+                        "elif cp -R -- $from $to && rm -rf -- $from; then ok=\$((ok+1)); $restore " +
                         "else fail=\$((fail+1)); fi",
                 )
             }
@@ -267,6 +270,43 @@ class ShellFileBackend(
         }
         val counts = result.parseCounts()
         return OperationResult(counts.succeeded, counts.failed + plan.skipped)
+    }
+
+    override suspend fun findAdFiles(androidDataRoot: File): List<FileItem> {
+        val patterns = listOf(
+            "ad_*", "ads_*", "*admob*", "*mopub*", "*applovin*", "*unityads*",
+            "*vungle*", "*ironsource*", "*chartboost*", "*startapp*", "*inmobi*",
+            "*adcolony*", "*tapjoy*", "*appodeal*", "*interstitial*", "*rewarded*",
+            "*adcache*", "*ad_banner*", "*ad_video*",
+        )
+        val script = buildString {
+            appendLine("cd -- ${androidDataRoot.absolutePath.shellQuoted()} 2>/dev/null || exit 0")
+            append("find . -maxdepth 5 -type f \\(")
+            patterns.forEachIndexed { index, pattern ->
+                if (index > 0) append(" -o")
+                append(" -iname ${pattern.shellQuoted()}")
+            }
+            appendLine(" \\) -exec stat -L -c '%s|%n' {} + 2>/dev/null")
+        }
+        val result = shell.run(script, timeoutMillis = 120_000L)
+        // A single unreadable entry makes find return non-zero; keep whatever it found.
+        if (result.stdout.isEmpty()) return emptyList()
+        return result.stdoutText.lineSequence()
+            .mapNotNull { line ->
+                val separator = line.indexOf('|')
+                if (separator <= 0) return@mapNotNull null
+                val size = line.substring(0, separator).toLongOrNull() ?: return@mapNotNull null
+                val relative = line.substring(separator + 1).removePrefix("./")
+                if (relative.isEmpty()) return@mapNotNull null
+                val file = File(androidDataRoot, relative)
+                FileItem.from(
+                    file = file,
+                    isDirectory = false,
+                    size = size,
+                    lastModified = 0L,
+                )
+            }
+            .toList()
     }
 
     override suspend fun stage(source: File, stagingDirectory: File): File {
@@ -296,6 +336,23 @@ class ShellFileBackend(
         val pairs: List<Pair<File, File>>,
         val skipped: Int,
     )
+
+    /**
+     * Restores default SELinux labels after writing into Android's protected trees.
+     * `restorecon` is deliberately best-effort: some targets (e.g. read-only /system)
+     * cannot be relabeled, and the copy itself has already succeeded.
+     */
+    private fun selinuxRestoreCommand(destination: File): String {
+        if (!correctSelinuxContext()) return ""
+        val path = destination.absolutePath
+        val protectedPath = path == "/data" || path.startsWith("/data/") ||
+            path == "/system" || path.startsWith("/system/") ||
+            path == "/sys" || path.startsWith("/sys/")
+        if (!protectedPath) return ""
+        val quoted = path.shellQuoted()
+        return "if command -v restorecon >/dev/null 2>&1; then " +
+            "restorecon -R $quoted >/dev/null 2>&1 || true; fi; "
+    }
 
     private suspend fun planTransfers(
         files: List<File>,

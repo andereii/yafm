@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId = "com.anderei.yafm"
         minSdk = 31
-        targetSdk = 37
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -65,6 +65,11 @@ dependencies {
 
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+
+    implementation(libs.zip4j)
+    implementation(libs.commons.compress)
+    implementation(libs.junrar)
+    implementation(libs.xz)
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.junit)

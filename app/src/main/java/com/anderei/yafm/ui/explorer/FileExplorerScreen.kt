@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,8 +49,10 @@ import androidx.compose.material.icons.rounded.DriveFileMove
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.FolderZip
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Movie
@@ -60,6 +61,8 @@ import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material.icons.rounded.Share
@@ -115,20 +118,33 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.anderei.yafm.R
+import com.anderei.yafm.YafmApplication
 import com.anderei.yafm.data.AccessMode
 import com.anderei.yafm.data.FileItem
+import com.anderei.yafm.data.archive.ArchiveFormat
+import com.anderei.yafm.data.archive.CreateArchiveOptions
+import com.anderei.yafm.ui.archive.ArchiveBusyDialog
+import com.anderei.yafm.ui.archive.CreateArchiveDialog
+import com.anderei.yafm.ui.archive.DirectoryPickerSheet
+import com.anderei.yafm.ui.archive.ExtractArchiveDialog
+import com.anderei.yafm.ui.archive.archiveMessage
 import com.anderei.yafm.util.openFile
 import com.anderei.yafm.util.shareFiles
 import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-fun FileExplorerRoute(viewModel: FileExplorerViewModel = viewModel()) {
+fun FileExplorerRoute(
+    viewModel: FileExplorerViewModel = viewModel(),
+    onExitToHome: (() -> Unit)? = null,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -142,6 +158,7 @@ fun FileExplorerRoute(viewModel: FileExplorerViewModel = viewModel()) {
         state = state,
         viewModel = viewModel,
         snackbarHostState = snackbarHostState,
+        onExitToHome = onExitToHome,
     )
 }
 
@@ -151,6 +168,7 @@ fun FileExplorerScreen(
     state: ExplorerState,
     viewModel: FileExplorerViewModel,
     snackbarHostState: SnackbarHostState,
+    onExitToHome: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -165,6 +183,14 @@ fun FileExplorerScreen(
     var renameTarget by remember { mutableStateOf<FileItem?>(null) }
     var deleteTargets by remember { mutableStateOf<List<FileItem>?>(null) }
     var detailsTarget by remember { mutableStateOf<FileItem?>(null) }
+    var pickerArchive by remember { mutableStateOf<FileItem?>(null) }
+    var extractTarget by remember { mutableStateOf<FileItem?>(null) }
+    var extractDestination by remember { mutableStateOf<File?>(null) }
+    var compressTargets by remember { mutableStateOf<List<FileItem>?>(null) }
+    var archiveBusy by remember { mutableStateOf<ArchiveWork?>(null) }
+    val archives = remember {
+        (context.applicationContext as YafmApplication).container.archives
+    }
 
     val visible = remember(state.entries, state.sort, state.ascending, state.showHidden, state.query) {
         state.entries
@@ -176,6 +202,16 @@ fun FileExplorerScreen(
     val selectedItems = remember(state.entries, state.selection) {
         state.entries.filter { it.path in state.selection }
     }
+
+    val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
+    val bookmarkedPaths = remember(bookmarks) {
+        bookmarks.mapTo(mutableSetOf()) { it.path }
+    }
+    val trashRetentionDays by viewModel.trashRetentionDays.collectAsStateWithLifecycle()
+    val currentFolder = remember(state.currentDir, state.currentTitle) {
+        FileItem.from(state.currentDir).copy(name = state.currentTitle)
+    }
+    val currentFolderBookmarked = state.currentDir.absolutePath in bookmarkedPaths
 
     val showSnackbar: (String) -> Unit = { message ->
         scope.launch { snackbarHostState.showSnackbar(message) }
@@ -192,6 +228,7 @@ fun FileExplorerScreen(
                 viewModel.prepareForExternalUse(listOf(item.file))
                     .onSuccess { prepared ->
                         prepared.firstOrNull()?.let { file ->
+                            viewModel.recordRecent(item)
                             openFile(context, file).onFailure {
                                 showSnackbar("No app can open “${item.name}”")
                             }
@@ -224,6 +261,13 @@ fun FileExplorerScreen(
         },
         onDetails = { detailsTarget = it },
         onDelete = { deleteTargets = listOf(it) },
+        onBookmark = { viewModel.toggleBookmark(it) },
+        onExtractHere = { item ->
+            extractTarget = item
+            extractDestination = item.file.parentFile ?: state.currentDir
+        },
+        onExtractTo = { item -> pickerArchive = item },
+        onCompress = { item -> compressTargets = listOf(item) },
     )
 
     val onItemClick: (FileItem) -> Unit = { item ->
@@ -233,14 +277,6 @@ fun FileExplorerScreen(
 
     LaunchedEffect(state.currentDir, state.searchActive, state.isSelectionMode) {
         fabExpanded = false
-    }
-
-    BackHandler(enabled = state.isSelectionMode || state.searchActive || state.canGoUp) {
-        when {
-            state.isSelectionMode -> viewModel.clearSelection()
-            state.searchActive -> viewModel.closeSearch()
-            state.canGoUp -> viewModel.goUp()
-        }
     }
 
     Scaffold(
@@ -276,6 +312,9 @@ fun FileExplorerScreen(
                     onRefresh = viewModel::refresh,
                     onAbout = { showAboutDialog = true },
                     onAccess = { showAccessSheet = true },
+                    onExitToHome = onExitToHome,
+                    currentFolderBookmarked = currentFolderBookmarked,
+                    onToggleCurrentBookmark = { viewModel.toggleBookmark(currentFolder) },
                 )
             }
         },
@@ -326,6 +365,7 @@ fun FileExplorerScreen(
                     },
                     onRename = { selectedItems.singleOrNull()?.let { renameTarget = it } },
                     onDelete = { deleteTargets = selectedItems },
+                    onCompress = { compressTargets = selectedItems },
                 )
             }
         },
@@ -345,6 +385,8 @@ fun FileExplorerScreen(
                     home = state.home,
                     current = state.currentDir,
                     includeFilesystemRoot = state.root.absolutePath == "/",
+                    root = state.root,
+                    rootLabel = state.rootLabel,
                     onNavigate = viewModel::navigateTo,
                 )
             }
@@ -367,6 +409,7 @@ fun FileExplorerScreen(
                     state.layout == LayoutMode.GRID -> FileGrid(
                         entries = visible,
                         selection = state.selection,
+                        bookmarkedPaths = bookmarkedPaths,
                         selectionMode = state.isSelectionMode,
                         actions = actions,
                         onItemClick = onItemClick,
@@ -376,6 +419,7 @@ fun FileExplorerScreen(
                     else -> FileList(
                         entries = visible,
                         selection = state.selection,
+                        bookmarkedPaths = bookmarkedPaths,
                         selectionMode = state.isSelectionMode,
                         actions = actions,
                         onItemClick = onItemClick,
@@ -423,16 +467,121 @@ fun FileExplorerScreen(
     deleteTargets?.let { targets ->
         DeleteDialog(
             items = targets,
+            retentionDays = trashRetentionDays,
             onDismiss = { deleteTargets = null },
-            onConfirm = {
+            onConfirm = { permanent ->
                 deleteTargets = null
-                viewModel.delete(targets.map(FileItem::file))
+                viewModel.delete(targets.map(FileItem::file), permanent)
             },
         )
     }
 
     detailsTarget?.let { target ->
         DetailsDialog(item = target, onDismiss = { detailsTarget = null })
+    }
+
+    pickerArchive?.let { archive ->
+        val volumes = remember(archive.path) {
+            (context.applicationContext as YafmApplication).container.storage.volumes()
+        }
+        DirectoryPickerSheet(
+            initialDirectory = state.currentDir,
+            rootDirectory = state.root,
+            volumes = volumes,
+            listFolders = viewModel::listFolders,
+            onDismiss = { pickerArchive = null },
+            onSelect = { destination ->
+                pickerArchive = null
+                extractTarget = archive
+                extractDestination = destination
+            },
+        )
+    }
+
+    extractTarget?.let { archive ->
+        val destination = extractDestination ?: archive.file.parentFile ?: state.currentDir
+        ExtractArchiveDialog(
+            archiveName = archive.name,
+            destination = destination.absolutePath,
+            onDismiss = {
+                extractTarget = null
+                extractDestination = null
+            },
+            onExtract = { password ->
+                extractTarget = null
+                extractDestination = null
+                archiveBusy = ArchiveWork.EXTRACT
+                scope.launch {
+                    val result = archives.extract(archive.file, destination, password)
+                    archiveBusy = null
+                    result.fold(
+                        onSuccess = {
+                            showSnackbar(
+                                context.getString(
+                                    R.string.archive_extracted,
+                                    destination.absolutePath,
+                                ),
+                            )
+                            viewModel.refresh()
+                        },
+                        onFailure = {
+                            showSnackbar(
+                                context.getString(
+                                    R.string.archive_extract_failed,
+                                    it.archiveMessage(context),
+                                ),
+                            )
+                        },
+                    )
+                }
+            },
+        )
+    }
+
+    compressTargets?.let { targets ->
+        CreateArchiveDialog(
+            suggestedName = suggestedArchiveName(targets),
+            initialFormat = ArchiveFormat.ZIP,
+            onDismiss = { compressTargets = null },
+            onCreate = { name, options ->
+                compressTargets = null
+                val destination = File(state.currentDir, name)
+                if (destination.exists()) {
+                    showSnackbar(context.getString(R.string.archive_exists))
+                } else {
+                    archiveBusy = ArchiveWork.CREATE
+                    scope.launch {
+                        val result = archives.create(targets.map(FileItem::file), destination, options)
+                        archiveBusy = null
+                        result.fold(
+                            onSuccess = {
+                                showSnackbar(context.getString(R.string.archive_created, name))
+                                viewModel.refresh()
+                            },
+                            onFailure = {
+                                showSnackbar(
+                                    context.getString(
+                                        R.string.archive_create_failed,
+                                        it.archiveMessage(context),
+                                    ),
+                                )
+                            },
+                        )
+                    }
+                }
+            },
+        )
+    }
+
+    archiveBusy?.let { work ->
+        ArchiveBusyDialog(
+            title = stringResource(
+                if (work == ArchiveWork.EXTRACT) R.string.archive_extract else R.string.archive_create,
+            ),
+            message = stringResource(
+                if (work == ArchiveWork.EXTRACT) R.string.archive_extracting else R.string.archive_creating,
+            ),
+        )
     }
 
     if (showSortSheet) {
@@ -479,6 +628,7 @@ fun FileExplorerScreen(
 private fun FileList(
     entries: List<FileItem>,
     selection: Set<String>,
+    bookmarkedPaths: Set<String>,
     selectionMode: Boolean,
     actions: FileRowActions,
     onItemClick: (FileItem) -> Unit,
@@ -494,6 +644,7 @@ private fun FileList(
                 item = item,
                 selected = item.path in selection,
                 selectionMode = selectionMode,
+                bookmarked = item.path in bookmarkedPaths,
                 actions = actions,
                 onClick = { onItemClick(item) },
                 onLongClick = { onItemLongClick(item) },
@@ -508,6 +659,7 @@ private fun FileList(
 private fun FileGrid(
     entries: List<FileItem>,
     selection: Set<String>,
+    bookmarkedPaths: Set<String>,
     selectionMode: Boolean,
     actions: FileRowActions,
     onItemClick: (FileItem) -> Unit,
@@ -525,6 +677,7 @@ private fun FileGrid(
                 item = item,
                 selected = item.path in selection,
                 selectionMode = selectionMode,
+                bookmarked = item.path in bookmarkedPaths,
                 actions = actions,
                 onClick = { onItemClick(item) },
                 onLongClick = { onItemLongClick(item) },
@@ -552,6 +705,9 @@ private fun ExplorerTopBar(
     onRefresh: () -> Unit,
     onAbout: () -> Unit,
     onAccess: () -> Unit,
+    onExitToHome: (() -> Unit)?,
+    currentFolderBookmarked: Boolean,
+    onToggleCurrentBookmark: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
 
@@ -573,7 +729,13 @@ private fun ExplorerTopBar(
             )
         },
         navigationIcon = {
-            if (!state.isAtRoot) {
+            if (state.isAtRoot) {
+                if (onExitToHome != null) {
+                    IconButton(onClick = onExitToHome) {
+                        Icon(Icons.Rounded.Home, contentDescription = "Home")
+                    }
+                }
+            } else {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Up one level")
                 }
@@ -629,6 +791,33 @@ private fun ExplorerTopBar(
                         onClick = {
                             menuOpen = false
                             onLocations()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                stringResource(
+                                    if (currentFolderBookmarked) {
+                                        R.string.remove_bookmark
+                                    } else {
+                                        R.string.add_bookmark
+                                    },
+                                ),
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                if (currentFolderBookmarked) {
+                                    Icons.Rounded.Star
+                                } else {
+                                    Icons.Rounded.StarBorder
+                                },
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            menuOpen = false
+                            onToggleCurrentBookmark()
                         },
                     )
                     DropdownMenuItem(
@@ -826,6 +1015,7 @@ private fun SelectionActionBar(
     onShare: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
+    onCompress: () -> Unit,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -867,6 +1057,12 @@ private fun SelectionActionBar(
                 enabled = singleSelection != null,
             )
             SelectionAction(
+                icon = Icons.Rounded.FolderZip,
+                label = stringResource(R.string.archive_compress),
+                onClick = onCompress,
+                modifier = Modifier.weight(1f),
+            )
+            SelectionAction(
                 icon = Icons.Rounded.Delete,
                 label = "Delete",
                 onClick = onDelete,
@@ -874,6 +1070,18 @@ private fun SelectionActionBar(
             )
         }
     }
+}
+
+private enum class ArchiveWork { EXTRACT, CREATE }
+
+private fun suggestedArchiveName(targets: List<FileItem>): String {
+    val base = if (targets.size == 1) {
+        val name = targets.first().name
+        ArchiveFormat.fromName(name)?.let { name.dropLast(it.extension.length) } ?: name
+    } else {
+        "Archive"
+    }
+    return base + ".zip"
 }
 
 // ---------------------------------------------------------------------------------- sheets
@@ -996,7 +1204,7 @@ private fun LocationsSheet(
         buildList {
             add(Location("Internal storage", "/storage/emulated/0", root, Icons.Rounded.Storage))
 
-            if (state.accessMode != AccessMode.STANDARD) {
+            if (state.accessMode != AccessMode.STANDARD || state.rootForAppDataEnabled) {
                 add(
                     Location(
                         "Android data",
